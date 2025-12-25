@@ -2,338 +2,190 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Card-Based JavaScript CRUD</title>
-    
+    <title>Pro CRUD: Storage & Search</title>
     <style>
-        /* Base and Layout */
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background-color: #eef2f7; 
-            margin: 0;
-            padding: 20px;
+        :root {
+            --primary: #3f51b5;
+            --success: #4caf50;
+            --danger: #f44336;
+            --warning: #ff9800;
+            --bg: #f0f2f5;
         }
 
-        .container {
-            max-width: 1100px; 
-            margin: 40px auto; 
-            background: #fff;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-        }
-
-        h1 {
-            color: #1a237e;
-            text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 3px solid #7986cb;
-            padding-bottom: 10px;
-        }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
         
-        /* Form Styles (Create/Update) */
-        #user-form { 
-            display: flex;
-            flex-wrap: wrap; /* Allows inputs to wrap on smaller screens */
-            gap: 15px;
-            padding: 20px; 
-            border: 1px solid #c5cae9; 
-            border-radius: 8px; 
-            background-color: #f1f3ff;
-            align-items: center;
-            margin-bottom: 30px;
-        }
+        h1 { text-align: center; color: var(--primary); }
 
-        input[type="text"] { 
-            flex-grow: 1;
-            padding: 12px; 
-            border: 1px solid #9fa8da; 
-            border-radius: 6px; 
-            transition: border-color 0.3s;
-            min-width: 200px; 
-        }
-        input[type="text"]:focus {
-            border-color: #3f51b5;
-            outline: none;
-            box-shadow: 0 0 5px rgba(63, 81, 181, 0.3);
-        }
+        /* Controls Section */
+        .controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .search-bar { flex-grow: 1; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; }
+        .clear-btn { background: var(--danger); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
 
-        /* Button Styles */
-        button { 
-            padding: 10px 18px; 
-            color: white; 
-            border: none; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            font-weight: 500;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        button:hover {
-            transform: translateY(-1px);
-        }
+        /* Form Styling */
+        #user-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; background: #f9f9f9; padding: 20px; border-radius: 10px; margin-bottom: 30px; border: 1px solid #eee; }
+        input { padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
         
-        /* Specific Button Colors */
-        #submit-button { 
-            background-color: #4caf50; /* Green for Add/Save */
-        }
-        #submit-button:hover { background-color: #43a047; }
+        .btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; }
+        .btn-add { background: var(--success); }
+        .btn-cancel { background: #9e9e9e; display: none; }
+
+        /* Card Grid */
+        #user-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .card { background: white; border: 1px solid #ddd; padding: 20px; border-radius: 10px; position: relative; transition: 0.3s; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
         
-        #cancel-button {
-            background-color: #78909c; /* Blue-Gray for Cancel */
-            display: none;
-        }
-        #cancel-button:hover { background-color: #607d8b; }
+        .price-tag { color: var(--success); font-weight: bold; }
+        .discount-badge { background: #e8f5e9; color: #2e7d32; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-left: 5px; }
         
-        .edit-btn { 
-            background-color: #ffb300; /* Amber for Edit */
-            color: #333;
-        }
-        .edit-btn:hover { background-color: #fb8c00; }
-
-        .delete-btn { 
-            background-color: #e53935; /* Red for Delete */
-        }
-        .delete-btn:hover { background-color: #c62828; }
-
-        /* Card Layout (READ) */
-        #user-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Responsive grid */
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .user-card {
-            background: #ffffff;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .user-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            border-bottom: 1px dashed #e0e0e0;
-            padding-bottom: 8px;
-        }
-
-        .card-name {
-            font-size: 1.4em;
-            color: #3f51b5;
-            font-weight: 600;
-        }
-
-        .card-id {
-            font-size: 0.9em;
-            color: #777;
-            background-color: #e8eaf6;
-            padding: 2px 8px;
-            border-radius: 4px;
-        }
-        
-        .card-email {
-            font-size: 1em;
-            color: #555;
-            margin-bottom: 15px;
-            display: block; /* Make sure the email takes its own line */
-        }
-        
-        .card-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        
-        /* Media Query for smaller screens */
-        @media (max-width: 600px) {
-            .container {
-                margin: 10px;
-                padding: 15px;
-            }
-            #user-form {
-                flex-direction: column;
-            }
-            input[type="text"], button {
-                width: 100%;
-                min-width: unset;
-            }
-            .card-actions {
-                justify-content: space-between;
-            }
-        }
+        .actions { margin-top: 15px; display: flex; gap: 10px; }
+        .edit-btn { background: var(--warning); flex: 1; }
+        .delete-btn { background: var(--danger); flex: 1; }
     </style>
 </head>
 <body>
-    
-    <div class="container">
-        <h1>User Directory Management</h1>
 
-        <div id="create-update-container">
-            <h2>Add New / Edit User</h2>
-            <form id="user-form">
-                <input type="hidden" id="user-id">
-                <input type="text" id="name-input" placeholder="Enter Full Name" required>
-                <input type="text" id="email-input" placeholder="Enter Email Address" required>
-                <button type="submit" id="submit-button">Add User</button>
-                <button type="button" id="cancel-button">Cancel Edit</button>
-            </form>
-        </div>
+<div class="container">
+    <h1>User & Order Manager</h1>
 
-        <h2>Current Users Directory</h2>
-        <div id="user-list">
-        </div>
+    <form id="user-form">
+        <input type="hidden" id="user-id">
+        <input type="text" id="name-input" placeholder="Name" required>
+        <input type="email" id="email-input" placeholder="Email" required>
+        <input type="number" id="price-input" placeholder="Order Price ($)" required>
+        <button type="submit" id="submit-button" class="btn btn-add">Add Record</button>
+        <button type="button" id="cancel-button" class="btn btn-cancel">Cancel</button>
+    </form>
+
+    <div class="controls">
+        <input type="text" id="search-input" class="search-bar" placeholder="Search by name or email...">
+        <button id="clear-storage" class="clear-btn">Clear All Data</button>
     </div>
-     <script>
-        // 1. Data Store Initialization
-        let users = [
-            { id: 1, name: "Alice Smith", email: "alice@example.com" },
-            { id: 2, name: "Bob Johnson", email: "bob@example.com" }
-        ];
-        let nextId = 3;
 
-        // 2. DOM Element References
-        const userList = document.getElementById('user-list');
-        const userForm = document.getElementById('user-form');
-        const nameInput = document.getElementById('name-input');
-        const emailInput = document.getElementById('email-input');
-        const userIdInput = document.getElementById('user-id');
-        const submitButton = document.getElementById('submit-button');
-        const cancelButton = document.getElementById('cancel-button');
+    <div id="user-list"></div>
+</div>
 
-        // --- RENDER (READ) FUNCTION - Updated for Card Structure ---
-        function renderUsers() {
-            // Clear existing list items
-            userList.innerHTML = ''; 
-
-            // Loop through the data and create new user cards
-            users.forEach(user => {
-                const card = document.createElement('div');
-                card.classList.add('user-card'); // Add the card class
-
-                // Use the new card HTML structure
-                card.innerHTML = `
-                    <div class="card-header">
-                        <span class="card-name">${user.name}</span>
-                        <span class="card-id">ID: ${user.id}</span>
-                    </div>
-                    <span class="card-email">Email: ${user.email}</span>
-                    <div class="card-actions">
-                        <button class="edit-btn" data-id="${user.id}">Edit</button>
-                        <button class="delete-btn" data-id="${user.id}">Delete</button>
-                    </div>
-                `;
-                userList.appendChild(card);
-            });
-        }
-
-        // --- CREATE / UPDATE HANDLER ---
-        userForm.addEventListener('submit', function(event) {
-            event.preventDefault(); 
-
-            const name = nameInput.value.trim();
-            const email = emailInput.value.trim();
-            const id = parseInt(userIdInput.value);
-
-            if (name === '' || email === '') {
-                alert("Please fill in all fields.");
-                return;
-            }
-
-            if (id) {
-                updateUser(id, name, email);
-            } else {
-                createUser(name, email);
-            }
-
-            resetForm();
-        });
-
-        // --- CREATE FUNCTION ---
-        function createUser(name, email) {
-            const newUser = {
-                id: nextId++,
-                name: name,
-                email: email
-            };
-            users.push(newUser);
-            renderUsers();
-            console.log('User created:', newUser);
-        }
-
-        // --- UPDATE FUNCTION ---
-        function updateUser(id, name, email) {
-            const userIndex = users.findIndex(user => user.id === id);
-            
-            if (userIndex !== -1) {
-                users[userIndex].name = name;
-                users[userIndex].email = email;
-                renderUsers();
-                console.log('User updated:', users[userIndex]);
-            }
-        }
+<script>
+    // --- DATA INITIALIZATION ---
+    // Load from Local Storage OR use default if empty
+    let users = JSON.parse(localStorage.getItem('crud_data')) || [
         
-        // --- DELETE FUNCTION ---
-        function deleteUser(id) {
-            if (confirm(`Are you sure you want to delete user ID ${id}?`)) {
-                users = users.filter(user => user.id !== id);
-                renderUsers();
-                console.log('User deleted:', id);
-            }
+    ];
+    let nextId = parseInt(localStorage.getItem('crud_nextId')) || 3;
+
+    const userList = document.getElementById('user-list');
+    const userForm = document.getElementById('user-form');
+    const searchInput = document.getElementById('search-input');
+
+    // --- DISCOUNT LOGIC ---
+    function getFinalPrice(price) {
+        if (price >= 1000) {
+            return { final: price * 0.8, discounted: true }; // 20% off
         }
+        return { final: price, discounted: false };
+    }
 
-        // --- EDIT PREP FUNCTION ---
-        function prepareEdit(id) {
-            const userToEdit = users.find(user => user.id === id);
-            
-            if (userToEdit) {
-                userIdInput.value = userToEdit.id;
-                nameInput.value = userToEdit.name;
-                emailInput.value = userToEdit.email;
+    // --- LOCAL STORAGE FUNCTIONS ---
+    function syncStorage() {
+        localStorage.setItem('crud_data', JSON.stringify(users));
+        localStorage.setItem('crud_nextId', nextId.toString());
+    }
 
-                submitButton.textContent = 'Save Changes';
-                submitButton.style.backgroundColor = '#3f51b5'; // Change color for 'Save'
-                cancelButton.style.display = 'inline';
-            }
-        }
+    // --- RENDER FUNCTION (With Filter Support) ---
+    function render(filter = "") {
+        userList.innerHTML = '';
+        const filtered = users.filter(u => 
+            u.name.toLowerCase().includes(filter.toLowerCase()) || 
+            u.email.toLowerCase().includes(filter.toLowerCase())
+        );
 
-        // --- RESET FORM FUNCTION ---
-        function resetForm() {
-            userForm.reset();
-            userIdInput.value = '';
-            submitButton.textContent = 'Add User';
-            submitButton.style.backgroundColor = '#4caf50'; // Reset color for 'Add'
-            cancelButton.style.display = 'none';
-        }
-
-        // --- EVENT DELEGATION (Handle Edit/Delete Clicks) ---
-        userList.addEventListener('click', function(event) {
-            const target = event.target;
-            // Ensure we are clicking a button and get its data-id attribute
-            if (target.tagName === 'BUTTON' && target.hasAttribute('data-id')) {
-                const id = parseInt(target.getAttribute('data-id'));
-                
-                if (target.classList.contains('delete-btn')) {
-                    deleteUser(id);
-                } else if (target.classList.contains('edit-btn')) {
-                    prepareEdit(id);
-                }
-            }
+        filtered.forEach(user => {
+            const pricing = getFinalPrice(user.price);
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <h3>${user.name}</h3>
+                <p>${user.email}</p>
+                <p class="price-tag">
+                    Price: $${pricing.final.toFixed(2)}
+                    ${pricing.discounted ? '<span class="discount-badge">20% Off Applied</span>' : ''}
+                </p>
+                <div class="actions">
+                    <button class="btn edit-btn" onclick="prepareEdit(${user.id})">Edit</button>
+                    <button class="btn delete-btn" onclick="deleteUser(${user.id})">Delete</button>
+                </div>
+            `;
+            userList.appendChild(card);
         });
-        
-        // --- CANCEL EDIT BUTTON HANDLER ---
-        cancelButton.addEventListener('click', resetForm);
+    }
 
-        // Initial render when the page loads
-        renderUsers(); 
-    </script>
+    // --- CREATE / UPDATE ---
+    userForm.onsubmit = (e) => {
+        e.preventDefault();
+        const id = document.getElementById('user-id').value;
+        const name = document.getElementById('name-input').value;
+        const email = document.getElementById('email-input').value;
+        const price = parseFloat(document.getElementById('price-input').value);
+
+        if (id) {
+            // Update
+            const index = users.findIndex(u => u.id == id);
+            users[index] = { id: parseInt(id), name, email, price };
+        } else {
+            // Create
+            users.push({ id: nextId++, name, email, price });
+        }
+
+        syncStorage();
+        resetForm();
+        render();
+    };
+
+    // --- DELETE ---
+    function deleteUser(id) {
+        if (confirm("Delete this record?")) {
+            users = users.filter(u => u.id !== id);
+            syncStorage();
+            render();
+        }
+    }
+
+    // --- EDIT PREP ---
+    function prepareEdit(id) {
+        const user = users.find(u => u.id === id);
+        document.getElementById('user-id').value = user.id;
+        document.getElementById('name-input').value = user.name;
+        document.getElementById('email-input').value = user.email;
+        document.getElementById('price-input').value = user.price;
+        
+        document.getElementById('submit-button').innerText = "Update Record";
+        document.getElementById('cancel-button').style.display = "inline-block";
+    }
+
+    // --- RESET & SEARCH & CLEAR ---
+    function resetForm() {
+        userForm.reset();
+        document.getElementById('user-id').value = '';
+        document.getElementById('submit-button').innerText = "Add Record";
+        document.getElementById('cancel-button').style.display = "none";
+    }
+
+    searchInput.oninput = (e) => render(e.target.value);
+
+    document.getElementById('cancel-button').onclick = resetForm;
+
+    document.getElementById('clear-storage').onclick = () => {
+        if (confirm("This will delete ALL data from local storage. Proceed?")) {
+            localStorage.clear();
+            users = [];
+            nextId = 1;
+            render();
+        }
+    };
+
+    // Initial Load
+    render();
+</script>
+
 </body>
 </html>
